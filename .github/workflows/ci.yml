@@ -26,10 +26,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+        run: uv pip install -e ".[dev]"
 
       - name: Run pytest
-        run: pytest -v
+        run: uv run pytest -v
 
   build:
     name: Build distribution
