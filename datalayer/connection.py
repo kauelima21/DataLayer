@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dotenv import load_dotenv
+
 import os
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -9,6 +11,8 @@ from . import grammar as grammar_pkg
 from .drivers.base import AsyncDriver
 from .exceptions import ConnectionError as DLConnectionError
 from .grammar.base import Grammar
+
+load_dotenv()
 
 DEFAULT_TIMEZONE = "America/Sao_Paulo"
 
