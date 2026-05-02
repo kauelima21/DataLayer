@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aiodatalayer"
-version = "2.2.0"
+version = "2.3.0"
 description = "ORM async minimalista (ActiveRecord) para MariaDB/MySQL e PostgreSQL — inspirado no DataLayer PHP de Robson V. Leite."
 readme = "README.md"
 requires-python = ">=3.12"
