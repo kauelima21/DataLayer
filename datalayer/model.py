@@ -37,6 +37,7 @@ _INTERNAL = {
     "_limit",
     "_offset",
     "_in_clause",
+    "_columns",
     "_table",
     "_required",
     "_primary_key",
@@ -90,6 +91,7 @@ class DataLayer:
         self._limit: int | None = None
         self._offset: int | None = None
         self._in_clause: tuple[str, list[Any]] | None = None
+        self._columns: str = "*"
 
     # column-as-attr access -----------------------------------------------
     def __setattr__(self, name: str, value: Any) -> None:
@@ -151,6 +153,10 @@ class DataLayer:
         self._in_clause = (column, list(values))
         return self
 
+    def columns(self, spec: str) -> "DataLayer":
+        self._columns = spec or "*"
+        return self
+
     # execution -----------------------------------------------------------
     async def fetch(self, all: bool = False):
         driver = await Connection.driver()
@@ -167,6 +173,7 @@ class DataLayer:
             order=self._order,
             limit=effective_limit,
             offset=self._offset,
+            columns=self._columns,
         )
         if all:
             rows = await driver.fetch(sql, params)

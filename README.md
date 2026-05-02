@@ -208,6 +208,22 @@ await User().find("role = :role", role="admin").in_("id", [1, 2, 3]).fetch(True)
 
 ---
 
+### `columns(spec)`
+
+Restringe colunas do `SELECT`. Recebe string crua (sem escape, sem array). Default é `*`. Não afeta `count()`.
+
+```python
+await User().find().columns("id, name, email").fetch(True)
+
+await User().find_by_id(1)  # ainda *
+await User().find("id = :id", id=1).columns("id, name").fetch()
+
+# count ignora — sempre COUNT(*)
+await User().find().columns("id").count()
+```
+
+---
+
 ### `count()`
 
 Total de registros da query atual.

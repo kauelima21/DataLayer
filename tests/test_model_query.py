@@ -60,6 +60,39 @@ async def test_fetch_many_chain_with_filters(fake_pg):
     assert params == ["admin", 1, 2, 3]
 
 
+async def test_columns_restricts_select_list(fake_pg):
+    fake_pg.fetch_rows = [{"id": 1, "name": "kaue"}]
+    await User().find().columns("id, name").fetch(True)
+    sql = fake_pg.last_sql()
+    assert sql.startswith("SELECT id, name FROM users")
+
+
+async def test_columns_default_is_star(fake_pg):
+    fake_pg.fetch_rows = []
+    await User().find().fetch(True)
+    assert fake_pg.last_sql().startswith("SELECT * FROM users")
+
+
+async def test_columns_chains_with_filters(fake_pg):
+    fake_pg.fetch_one_row = {"id": 1, "name": "kaue"}
+    await (
+        User()
+        .find("role = :role", role="admin")
+        .columns("id, name")
+        .fetch()
+    )
+    sql = fake_pg.last_sql()
+    assert sql.startswith("SELECT id, name FROM users")
+    assert "WHERE (role = $1)" in sql
+
+
+async def test_columns_does_not_affect_count(fake_pg):
+    fake_pg.fetch_rows = [{"total": 7}]
+    total = await User().find().columns("id, name").count()
+    assert total == 7
+    assert "COUNT(*)" in fake_pg.last_sql()
+
+
 async def test_count_returns_total(fake_pg):
     fake_pg.fetch_rows = [{"total": 42}]
     total = await User().find("role = :r", r="admin").count()
