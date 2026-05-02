@@ -34,6 +34,7 @@ _INTERNAL = {
     "_condition",
     "_params",
     "_order",
+    "_group",
     "_limit",
     "_offset",
     "_in_clause",
@@ -88,6 +89,7 @@ class DataLayer:
         self._condition: str | None = None
         self._params: dict[str, Any] = {}
         self._order: str | None = None
+        self._group: str | None = None
         self._limit: int | None = None
         self._offset: int | None = None
         self._in_clause: tuple[str, list[Any]] | None = None
@@ -141,6 +143,10 @@ class DataLayer:
         self._order = clause
         return self
 
+    def group(self, clause: str) -> "DataLayer":
+        self._group = clause
+        return self
+
     def limit(self, n: int) -> "DataLayer":
         self._limit = int(n)
         return self
@@ -171,6 +177,7 @@ class DataLayer:
             params=self._params,
             in_clause=self._in_clause,
             order=self._order,
+            group=self._group,
             limit=effective_limit,
             offset=self._offset,
             columns=self._columns,

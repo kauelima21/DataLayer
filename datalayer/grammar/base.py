@@ -41,6 +41,7 @@ class Grammar:
         params: dict[str, Any] | None = None,
         in_clause: tuple[str, list[Any]] | None = None,
         order: str | None = None,
+        group: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
         columns: str = "*",
@@ -60,6 +61,8 @@ class Grammar:
             wheres.append(f"{col} IN ({', '.join(keys)})")
         if wheres:
             sql += " WHERE " + " AND ".join(wheres)
+        if group:
+            sql += f" GROUP BY {group}"
         if order:
             sql += f" ORDER BY {order}"
         if limit is not None:
