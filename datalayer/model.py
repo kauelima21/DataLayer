@@ -184,8 +184,7 @@ class DataLayer:
         )
         if all:
             rows = await driver.fetch(sql, params)
-            tz = Connection.timezone()
-            return [_normalize_row(r, tz) for r in rows]
+            return [type(self)()._hydrate(r) for r in rows]
         row = await driver.fetch_one(sql, params)
         if row is None:
             return None
