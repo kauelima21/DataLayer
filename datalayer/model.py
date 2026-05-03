@@ -212,6 +212,20 @@ class DataLayer:
             if col not in self._data or self._data[col] in (None, ""):
                 raise ValidationError(f"Campo '{col}' e obrigatorio")
 
+    async def _exists_by_pk(self, driver, grammar, pk: str, value: Any) -> bool:
+        sql, params = grammar.compile_count(
+            table=self._table,
+            condition=f"{pk} = :__pk_check",
+            params={"__pk_check": value},
+        )
+        rows = await driver.fetch(sql, params)
+        if not rows:
+            return False
+        first = rows[0]
+        if "total" in first:
+            return int(first["total"]) > 0
+        return int(next(iter(first.values()))) > 0
+
     async def save(self) -> "DataLayer":
         self._validate()
         driver = await Connection.driver()
@@ -219,7 +233,16 @@ class DataLayer:
         pk = self._primary_key
         now = datetime.now(Connection.timezone()).replace(tzinfo=None)
 
-        if pk in self._data and self._data[pk] not in (None, ""):
+        pk_value = self._data.get(pk)
+        has_pk = pk_value not in (None, "")
+        # pk hidratado do DB nao esta em _dirty; pk informado pelo usuario esta.
+        # Para PKs nao auto-increment, precisamos checar existencia antes.
+        if has_pk and pk in self._dirty:
+            exists = await self._exists_by_pk(driver, grammar, pk, pk_value)
+        else:
+            exists = has_pk
+
+        if exists:
             # UPDATE — apenas campos modificados; created_at nunca tocado
             data = {
                 k: v
@@ -228,17 +251,17 @@ class DataLayer:
             }
             if not data:
                 # nada modificado — devolve registro atual sem hit no DB
-                return await type(self)().find_by_id(self._data[pk])
+                return await type(self)().find_by_id(pk_value)
             if self._timestamps:
                 data["updated_at"] = now
             sql, params = grammar.compile_update(
                 table=self._table,
                 data=data,
                 condition=f"{pk} = :__pk",
-                condition_params={"__pk": self._data[pk]},
+                condition_params={"__pk": pk_value},
             )
             await driver.execute(sql, params)
-            return await type(self)().find_by_id(self._data[pk])
+            return await type(self)().find_by_id(pk_value)
 
         # INSERT
         if self._timestamps:

@@ -126,6 +126,48 @@ async def test_update_skips_db_when_nothing_dirty(fake_pg):
     assert saved.name == "x"
 
 
+class Country(DataLayer):
+    table = "countries"
+    required = ["code", "name"]
+    primary_key = "code"
+    timestamps = False
+
+
+async def test_save_inserts_when_user_supplied_pk_does_not_exist(fake_pg):
+    # PK nao auto-increment, registro inexistente -> INSERT, nao UPDATE
+    fake_pg.fetch_rows = [{"total": 0}]  # exists check
+    fake_pg.insert_result = {"code": "BR", "name": "Brasil"}
+    c = Country()
+    c.code = "BR"
+    c.name = "Brasil"
+    saved = await c.save()
+    kinds = [k[0] for k in fake_pg.calls]
+    assert "fetch" in kinds  # exists probe
+    assert "insert" in kinds
+    assert "execute" not in kinds  # nenhum UPDATE
+    insert_sql = next(c[1] for c in fake_pg.calls if c[0] == "insert")
+    assert insert_sql.startswith("INSERT INTO countries")
+    assert "code" in insert_sql
+    assert saved.code == "BR"
+
+
+async def test_save_updates_when_user_supplied_pk_exists(fake_pg):
+    # PK nao auto-increment, registro existente -> UPDATE
+    fake_pg.fetch_rows = [{"total": 1}]
+    fake_pg.fetch_one_row = {"code": "BR", "name": "Brasil Atualizado"}
+    c = Country()
+    c.code = "BR"
+    c.name = "Brasil Atualizado"
+    saved = await c.save()
+    kinds = [k[0] for k in fake_pg.calls]
+    assert "execute" in kinds
+    assert "insert" not in kinds
+    update_sql = next(c[1] for c in fake_pg.calls if c[0] == "execute")
+    assert update_sql.startswith("UPDATE countries SET")
+    assert "WHERE code =" in update_sql
+    assert saved.code == "BR"
+
+
 async def test_save_mariadb_uses_lastrowid_then_refetch(fake_maria):
     fake_maria.insert_result = 7  # lastrowid
     fake_maria.fetch_one_row = {"id": 7, "name": "kaue", "email": "k@x.com"}
